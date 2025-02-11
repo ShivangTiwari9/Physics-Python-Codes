@@ -1,0 +1,55 @@
+from numpy import pi, sqrt, inf, linspace
+from scipy.special import kn
+from scipy.integrate import quad
+from scipy.integrate import solve_ivp
+import matplotlib.pyplot as plt
+#Defining Constants
+gam_h=3.4e-3
+mh=125
+mf=1.28
+m_pl=1.22e19
+#Defining Functions
+def Y0(x,m):
+    return neq(x,m)/S(x,m)
+def neq(x,m):
+    return 1/(2*pi**2)*m**3/x*kn(2,x)
+def S(x,m):
+    return 105*(2*pi**2)/45*m**3/x**3
+def f(x,m):
+    return S(x,m)/H(m)*neq(x,m)**(-2)*m/(64*pi**4*x)
+def H(m):
+    return sqrt(106*4*pi**3/45)*m**3/m_pl
+#Defining integral function
+def sigma(s,m,lam):
+    e1=lam**2*mf**2/pi
+    e2=1/((s-mh**2)**2+mh**2*gam_h**2)
+    e3=(s-4*mf**2)**(1.5)/sqrt(s)
+    e4=sqrt(1-4*m**2/s)
+    return e1*e2*e3*e4
+def integrand(s,x,m,lam):
+    return sigma(s,m,lam)*sqrt(s)*kn(1,x*sqrt(s)/m)
+#Solving Differential Equation
+def dydx(x,Y,m,lam):
+    integral=quad(integrand,4*m**2,inf,args=(x,m,lam))[0]
+    return-x*f(x,m)*integral*(Y**2-Y0(x,m)**2)
+def Y(m,lam,span):
+    result=solve_ivp(dydx,t_span=span,y0=[Y0(span[0],m)],args=(m,lam))
+    return result.t,result.y[0]
+#Running Code for some sample inputs
+x1,y1=Y(3,1e-5,(1,100))
+x2,y2=Y(4,1e-5,(1,100))
+x3,y3=Y(6,1e-5,(1,100))
+x4,y4=Y(7,1e-5,(1,100))
+x5,y5=Y(15,1e-5,(1,100))
+#Plotting and Displaying Results
+plt.plot(x1,y1,label="m=3")
+plt.plot(x2,y2,label="m=4")
+plt.plot(x3,y3,label="m=6")
+plt.plot(x4,y4,label="m=7")
+plt.plot(x5,y5,label="m=15")
+plt.xlabel('$x= m/T$',fontsize=20)
+plt.ylabel('$Y_0$',fontsize=20)
+plt.semilogx()
+plt.semilogy()
+plt.legend(facecolor='white',framealpha=1)
+plt.show()
